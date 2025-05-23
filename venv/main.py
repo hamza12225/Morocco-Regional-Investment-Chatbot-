@@ -10,21 +10,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # LangChain Imports
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import BaseMessage, HumanMessage, SystemMessage, AIMessage
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+# Updated LangChain imports
+from langchain_openai import ChatOpenAI
+from langchain_core.callbacks import AsyncCallbackHandler
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.tools import BaseTool, tool
-from langchain.callbacks import AsyncCallbackHandler
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.output_parsers import PydanticOutputParser
-from langchain.chat_models import ChatOpenAI as LangChainChatOpenAI
-from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
+from langchain_community.embeddings import HuggingFaceEmbeddings 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -63,9 +67,10 @@ class MoroccoKnowledgeBase:
     
     def __init__(self, config: DeepSeekConfig):
         self.config = config
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=config.api_key,
-            openai_api_base=config.base_url
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-MiniLM-L6-v2",  # Lightest
+            model_kwargs={'device': 'cpu'}, 
+            encode_kwargs={'normalize_embeddings': True}
         )
         self.vector_store = None
         self.bm25_retriever = None
@@ -318,10 +323,10 @@ class EnhancedMoroccoAgent:
         self.knowledge_base = knowledge_base
         
         # Initialize LangChain ChatOpenAI with DeepSeek
-        self.llm = LangChainChatOpenAI(
-            openai_api_key=config.api_key,
-            openai_api_base=config.base_url,
-            model_name=config.model,
+        self.llm = ChatOpenAI(
+            api_key=config.api_key,
+            base_url=config.base_url,
+            model=config.model,
             max_tokens=config.max_tokens,
             temperature=config.temperature
         )
@@ -461,10 +466,10 @@ class EnhancedAgentOrchestrator:
         }
         
         # Router LLM
-        self.router_llm = LangChainChatOpenAI(
-            openai_api_key=config.api_key,
-            openai_api_base=config.base_url,
-            model_name=config.model,
+        self.router_llm = ChatOpenAI(
+            api_key=config.api_key,
+            base_url=config.base_url,
+            model=config.model,
             temperature=0.3
         )
     
@@ -712,7 +717,21 @@ async def health_check():
         "vector_store": "initialized",
         "agents": len(orchestrator.agents)
     }
+@app.on_event("startup")
+async def startup_event():
+    # Preload models and dependencies
+    MoroccoKnowledgeBase(config).retrieve_relevant_info("test") 
+    print("➔ Preloaded all ML models and dependencies")
 
+@app.get("/ready")
+async def readiness_check():
+    return {"status": "ready"}
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,  # Disable auto-reload
+        timeout_keep_alive=100  # Add this line
+    )
