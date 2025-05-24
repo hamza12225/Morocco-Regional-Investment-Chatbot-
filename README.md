@@ -36,7 +36,6 @@ A sophisticated AI-powered investment advisory system that provides comprehensiv
 ```bash
 git clone https://github.com/hamza12225/Morocco-Regional-Investment-Chatbot.git
 cd Morocco-Regional-Investment-Chatbot
-cd venv
 ```
 
 2. **Create and activate virtual environment**
@@ -73,6 +72,7 @@ sudo systemctl start redis-server
 
 # On Windows (if using WSL or native Redis)
 redis-server
+# Or install redis server on Docker
 ```
 
 6. **Run the application**
