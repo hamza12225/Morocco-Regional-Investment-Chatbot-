@@ -34,8 +34,9 @@ A sophisticated AI-powered investment advisory system that provides comprehensiv
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/morocco-investment-assistant.git
-cd morocco-investment-assistant
+git clone https://github.com/hamza12225/Morocco-Regional-Investment-Chatbot.git
+cd Morocco-Regional-Investment-Chatbot
+cd venv
 ```
 
 2. **Create and activate virtual environment**
@@ -51,7 +52,7 @@ source venv/bin/activate
 
 3. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+pip install -r requirements1.txt
 ```
 
 4. **Set up environment variables**
@@ -154,6 +155,7 @@ class DeepSeekConfig:
 The system automatically initializes a Chroma vector database with Morocco investment knowledge. The database persists in `./chroma_db/` directory.
 
 ### Redis Caching
+NOTE : YOU NEED TO HAVE REDIS INSTALLED IN YOURS MACHINE AND SET TO DEFAULT PORT
 Responses are cached for 1 hour to improve performance:
 - Cache key format: `enhanced_query:{agent_type}:{query_hash}`
 - TTL: 3600 seconds (1 hour)
