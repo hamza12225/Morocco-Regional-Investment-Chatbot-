@@ -169,7 +169,7 @@ class MoroccoInvestmentChat:
             response = requests.post(
                 f"{API_BASE_URL}/chat",
                 json=payload,
-                timeout=120  # Increased timeout for agent processing
+                timeout=300  # Increased timeout for agent processing
             )
             
             if response.status_code == 200:

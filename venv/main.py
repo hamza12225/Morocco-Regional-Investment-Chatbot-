@@ -173,6 +173,214 @@ class MoroccoKnowledgeBase:
             """, metadata={"type": "financial", "category": "costs"})
         ]
         
+        knowledge_documents.extend([
+        # Strategic Objectives
+        Document(
+            page_content="""
+            Morocco Investment Charter Objectives:
+            - Create stable employment opportunities to support economic growth.
+            - Reduce territorial disparities through equitable regional development.
+            - Promote investment in priority sectors and Next Generation Industries (e.g., digital technologies, renewable energy, pharmaceuticals).
+            - Strengthen Morocco's position as a continental and international hub for foreign direct investment (FDI).
+            - Encourage export growth and expansion of Moroccan companies abroad.
+            - Substitute imports with local production.
+            - Achieve sustainable development through eco-friendly practices.
+            - Improve the business climate and streamline investment processes.
+            - Increase private investment to 65% of total investment by 2035.
+            - Target: 550 billion MAD in private investment and 500,000 jobs by 2026.
+            """,
+            metadata={"type": "strategic", "category": "objectives"}
+        ),
+
+        # Main Support Mechanism
+        Document(
+            page_content="""
+            Main Investment Support Mechanism:
+            - Eligibility: Investment projects ≥ 50 million MAD or creating ≥ 50 permanent jobs.
+            - Incentives:
+            - Stable Jobs: 5% (ratio >1 to ≤1.5), 7% (ratio >1.5 to ≤3), 10% (ratio >3) of investment amount.
+            - Gender Ratio: 3% for projects with balanced women’s salaries.
+            - Future Professions & Industry Upgrading: 3% for projects in Next Generation Industries (e.g., AI, biotechnology, renewable energy).
+            - Sustainable Projects: 3% for projects using non-conventional water and meeting sustainability criteria.
+            - Local Inclusion: 3% for projects with ≥20% local inclusion (agri-food, pharmaceuticals) or ≥40% (other manufacturing).
+            - Published: Official Bulletin, March 13, 2023.
+            """,
+            metadata={"type": "financial", "category": "incentives_main"}
+        ),
+
+        # Strategic Projects Support
+        Document(
+            page_content="""
+            Specific Support Mechanism for Strategic Projects:
+            - Eligibility: Projects ≥ 2 billion MAD, contributing to water, energy, food, or health security, or meeting criteria like significant job creation, economic influence, or technology development (e.g., defense industry).
+            - Incentives: Tailored support measures aligned with investor needs.
+            - Contact: Ministry of Investment, Convergence and Evaluation of Public Policies.
+            - Published: Decree adopted January 26, 2023.
+            """,
+            metadata={"type": "financial", "category": "incentives_strategic"}
+        ),
+
+        # Moroccan Businesses Abroad
+        Document(
+            page_content="""
+            Specific Support Mechanism for Moroccan Businesses Abroad:
+            - Objective: Enhance Morocco’s economic influence, especially in Africa.
+            - Conditions: Support provided without causing job losses in Morocco.
+            - Status: Application text to be published post-Framework Law.
+            """,
+            metadata={"type": "financial", "category": "incentives_international"}
+        ),
+
+        # Small and Medium Enterprises
+        Document(
+            page_content="""
+            Specific Support Mechanism for Very Small, Small, and Medium-Sized Enterprises:
+            - Targets: Majority of Moroccan entrepreneurial landscape.
+            - Support: Financial incentives, plus assistance in financing, training, and project structuring.
+            - Status: Application text to be published post-Framework Law.
+            """,
+            metadata={"type": "financial", "category": "incentives_sme"}
+        ),
+
+        # Next Generation Industries
+        Document(
+            page_content="""
+            Next Generation Industries:
+            - Digital Technologies: Biotechnology, cybersecurity, blockchain, cloud computing, AI, IoT, nanotechnology, agritech, healthtech, edtech, fintech, govtech, virtual/augmented reality.
+            - Pharmaceuticals: Medical cannabis transformation, medical device manufacturing, vaccines.
+            - Renewable Energy: Production and storage facilities, energy efficiency technologies.
+            - Other Sectors: Semiconductors, smart meters, 3D printing, robotics, shipbuilding, electric and autonomous mobility.
+            - Published: Official Bulletin, March 13, 2023.
+            """,
+            metadata={"type": "sectoral", "category": "next_generation"}
+        ),
+
+        # Level-Upgrading Activities
+        Document(
+            page_content="""
+            Level-Upgrading Activities:
+            - Automotive: Spare parts for thermal/electric motors, heavy vehicles, pneumatic wheels.
+            - Aerospace: Ancillary equipment, aircraft engine parts, aircraft manufacturing/dismantling.
+            - Agricultural: Animal feed, baby food, nutritional supplements, health-focused food products, irrigation equipment.
+            - Textile/Leather: Technical fabrics and skins.
+            - Pharmaceuticals: Medical devices, medicines, vaccines, aromatic/medicinal plants.
+            - Mining: High-value derivatives, phosphate-based products.
+            - Energy Transition: Seawater desalination equipment.
+            - Published: Official Bulletin, March 13, 2023.
+            """,
+            metadata={"type": "sectoral", "category": "level_upgrading"}
+        ),
+
+        # Sustainable Investment Projects
+        Document(
+            page_content="""
+            Sustainable Investment Projects:
+            - Mandatory Requirement: Use non-conventional water (recycled, treated wastewater, or desalinated) and water economy systems.
+            - Additional Criteria (at least two): Renewable energy use, energy efficiency systems, waste treatment systems, social responsibility programs.
+            - Incentive: 3% of investment amount.
+            - Published: Official Bulletin, March 13, 2023.
+            """,
+            metadata={"type": "financial", "category": "incentives_sustainable"}
+        ),
+
+        # Local Inclusion Projects
+        Document(
+            page_content="""
+            Local Inclusion Projects:
+            - Eligibility: ≥20% local inclusion for agri-food, pharmaceutical, or medical supplies industries; ≥40% for other manufacturing.
+            - Calculation: (Local Purchases + Value Added + Crude Margin) / Turnover.
+            - Incentive: 3% of investment amount.
+            - Published: Official Bulletin, March 13, 2023.
+            """,
+            metadata={"type": "financial", "category": "incentives_local"}
+        ),
+
+        # Territorial Incentives
+        Document(
+            page_content="""
+            Territorial-Based Incentives:
+            - Objective: Enhance territorial equity.
+            - Excluded Regions: Benslimane, Berrechid, Casablanca, El Jadida, Médiouna, Mohammédia, Nouaceur, Settat, Marrakech, Kénitra, Rabat, Skhirate-Témara, Agadir Ida-Outanane, Fahs-Anjra, Tanger-Assilah.
+            - Incentive: Additional support for projects in non-excluded regions to promote equitable development.
+            """,
+            metadata={"type": "financial", "category": "incentives_territorial"}
+        ),
+
+        # Sector-Based Incentives
+        Document(
+            page_content="""
+            Sector-Based Incentives:
+            - Targeted Sectors: Industry, tourism, real estate development, education, health, audiovisual industry, cultural industry, digital economy, agriculture, aquaculture, mining, logistics, renewable energy, recycling, waste recovery.
+            - Objective: Boost sectors with high growth potential.
+            """,
+            metadata={"type": "financial", "category": "incentives_sectoral"}
+        ),
+
+        # Business Climate Improvements
+        Document(
+            page_content="""
+            Business Climate Improvements (2023-2026 Roadmap):
+            - Pillar 1: Simplify investment processes, digitize procedures, decentralize administration, reduce payment terms.
+            - Pillar 2: Enhance competitiveness via financing, renewable energy access, industrial decarbonization, logistics improvements.
+            - Pillar 3: Promote entrepreneurship, innovation, R&D, and human capital training.
+            - Cross-Functional Pillar: Strengthen ethics, integrity, and anti-corruption measures.
+            """,
+            metadata={"type": "regulatory", "category": "business_climate"}
+        ),
+
+        # Investment Governance
+        Document(
+            page_content="""
+            Investment Governance:
+            - Ministry of Investment, Convergence and Evaluation of Public Policies: Oversees strategic projects.
+            - National Investment Commission: Chaired by the Head of Government, approves investment agreements, grants strategic status (secretariat by AMDIE).
+            - Regional Investment Centers (RICs): One-stop shops for investors, manage regional projects (≤250 million MAD agreements at regional level; >250 million MAD at central level).
+            """,
+            metadata={"type": "regulatory", "category": "governance"}
+        ),
+
+        # Contact Information
+        Document(
+            page_content="""
+            Investment Contacts:
+            - AMDIE (Moroccan Investment and Export Development Agency):
+            - Phone: +212 5372-26400
+            - Email: morocconow@amdie.gov.ma
+            - Address: Mahaj Riad Center, Avenue Attine, Building N°5 & N°7, Rabat 10100, Morocco
+            - Website: www.morocconow.com
+            - Ministry of Investment, Convergence and Evaluation of Public Policies:
+            - Phone: +212 538061301
+            - Address: ANCFCC, Tower 6, Boulevard Abderrahim Bouabid, Guich Oudaya, Agdal-Ryad, Rabat, Morocco
+            - Regional Investment Centers (RICs):
+            - Casablanca-Settat: +212522494242, info@casainvest.ma, www.casainvest.ma
+            - Tangier-Tetouan-Al Hoceima: +212539342301, info@investangier.com, www.investangier.com
+            - Fès-Meknes: +212535652057, info@fesmeknesinvest.ma, www.fesmeknesinvest.ma
+            - Marrakech-Safi: +212524420493, contact@crimarrakech.ma, www.crimarrakech.ma
+            - Souss-Massa: +212528230807, contact@cri-agadir.ma, www.cri-agadir.ma
+            - the Rabat-Salé-Kénitra Region: +212537776400,info@rabatinvest.ma,www.rabatinvest.ma
+            """,
+            metadata={"type": "contacts", "category": "investment_support"}
+        ),
+         # Contact Information
+        Document(
+            page_content="""
+            Economy and Trade in Morocco
+            GDP Growth:
+                GDP per capita (current US$): Increased from $3,435 in 2014 to $3,771 in 2023.
+                GDP (constant LCU): Grew from 1.00 trillion in 2014 to 1.23 trillion in 2023.
+                Trade:
+                Merchandise exports to high-income economies: 78.1% of total exports in 2023, up from 75.1% in 2014.
+                Manufactures exports: Increased from 66.9% to 74.7% of merchandise exports (2014–2023).
+                Medium and high-tech exports: Rose from 48.9% to 64.9% of manufactured exports (2014–2022).
+                Commercial service imports: Grew from $7.90 billion in 2014 to $11.03 billion in 2023.
+                Foreign Direct Investment (FDI): Net inflows dropped from 2.96% of GDP in 2014 to 0.76% in 2023.
+                Remittances: Personal remittances increased from $7.79 billion (6.54% of GDP) in 2014 to $11.75 billion (8.14% of GDP) in 2023.
+                Debt Service: Total debt service decreased from 12.9% of exports in 2014 to 9.2% in 2023
+            """,
+            metadata={"type": "financial", "category": "Economy_and_trade"}
+            )
+        ])
+        
         # Create vector store
         self.vector_store = Chroma.from_documents(
             documents=knowledge_documents,
