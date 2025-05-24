@@ -412,20 +412,91 @@ def get_regional_info(region: str, aspect: str = "overview") -> str:
         aspect: Specific aspect (sectors, infrastructure, workforce, advantages)
     """
     regional_data = {
-        "casablanca_settat": {
-            "overview": "Morocco's economic powerhouse with 32% of GDP, strong in automotive, aerospace, finance",
-            "sectors": "Automotive (Renault, PSA), Aerospace (Boeing, Safran), Finance, Logistics, Textiles",
-            "infrastructure": "Port of Casablanca (40M tons), Mohammed V Airport, Industrial zones",
-            "workforce": "2.5M active, multilingual, highly skilled technical workforce"
-        },
-        "tangier_tetouan": {
-            "overview": "Gateway to Europe with 8% of GDP, manufacturing and logistics hub",
-            "sectors": "Manufacturing, Automotive, Textiles, Logistics",
-            "infrastructure": "Tanger Med Port (largest in Africa), Free zones, Automotive city",
-            "workforce": "800K active, competitive costs, proximity to Europe"
-        }
+    "casablanca_settat": {
+        "overview": "Morocco's economic powerhouse, contributing 32% of national GDP, a hub for automotive, aerospace, finance, and logistics.",
+        "sectors": "Automotive (Renault, Stellantis), Aerospace (Boeing, Safran), Finance, Logistics, Textiles, Pharmaceuticals",
+        "infrastructure": "Port of Casablanca (40M tons capacity), Mohammed V International Airport, industrial zones (e.g., Midparc, Atlantic Free Zone), advanced rail and road networks",
+        "workforce": "2.5M active workers, multilingual (Arabic, French, English, Spanish), highly skilled in technical and financial sectors",
+        "advantages": "Economic capital, proximity to major ports and airports, established industrial ecosystems, high foreign direct investment (FDI) attractiveness"
+    },
+    "tangier_tetouan_al_hoceima": {
+        "overview": "Strategic gateway to Europe, contributing 8% of GDP, a major manufacturing and logistics hub.",
+        "sectors": "Automotive (Renault, Yazaki), Textiles, Logistics, Renewable Energy, Maritime Industries",
+        "infrastructure": "Tanger Med Port (Africa’s largest, 9M TEU capacity), Tangier Free Zone, Tanger Automotive City, high-speed rail (Al Boraq)",
+        "workforce": "800K active workers, competitive labor costs, multilingual (Arabic, French, Spanish), proximity to Europe",
+        "advantages": "Strategic location (14 km from Europe), robust logistics infrastructure, free trade zones, growing renewable energy sector"
+    },
+    "oriental": {
+        "overview": "Emerging region with focus on industrial growth and cross-border trade, contributing to Morocco’s eastern development.",
+        "sectors": "Agri-food, Mining, Renewable Energy, Tourism, Logistics",
+        "infrastructure": "Nador West Med Port (under development), Oujda-Angad Airport, industrial parks (e.g., Selouane Industrial Zone), road connectivity to Algeria",
+        "workforce": "600K active workers, skilled in agriculture and mining, growing technical expertise",
+        "advantages": "Proximity to Mediterranean markets, incentives for sustainable projects, potential for cross-border trade"
+    },
+    "fes_meknes": {
+        "overview": "Cultural and industrial hub with a focus on agriculture, manufacturing, and education.",
+        "sectors": "Agri-food, Textiles, Leather, Renewable Energy, Education (Edtech)",
+        "infrastructure": "Fès-Saïss Airport, industrial zones (e.g., Ain Cheggag), rail and road connectivity to major cities",
+        "workforce": "700K active workers, skilled in agriculture, textiles, and emerging tech sectors, supported by universities",
+        "advantages": "Rich cultural heritage, growing renewable energy sector, strong academic ecosystem for R&D"
+    },
+    "rabat_sale_kenitra": {
+        "overview": "Administrative and industrial hub, contributing to Morocco’s governance and economic diversification.",
+        "sectors": "Automotive, Aerospace, IT (Govtech, Fintech), Public Services, Logistics",
+        "infrastructure": "Rabat-Salé Airport, Technopolis Rabat (tech and innovation hub), Kenitra Atlantic Free Zone, high-speed rail",
+        "workforce": "1.2M active workers, highly educated, multilingual, strong in administrative and technical skills",
+        "advantages": "Political stability, proximity to government institutions, innovation-driven ecosystem, access to Atlantic ports"
+    },
+    "beni_mellal_khenifra": {
+        "overview": "Agricultural and renewable energy hub with focus on sustainable development.",
+        "sectors": "Agri-food, Renewable Energy, Mining (Phosphates), Tourism",
+        "infrastructure": "Beni Mellal Airport, industrial zones, irrigation networks for agriculture, road connectivity",
+        "workforce": "500K active workers, skilled in agriculture and mining, growing renewable energy expertise",
+        "advantages": "Rich agricultural resources, phosphate mining potential, incentives for sustainable projects"
+    },
+    "marrakech_safi": {
+        "overview": "Tourism and industrial hub with a focus on sustainable growth and cultural heritage.",
+        "sectors": "Tourism, Agri-food, Renewable Energy, Mining, Handicrafts",
+        "infrastructure": "Marrakech Menara Airport, industrial zones (e.g., Sidi Ghanem), solar power plants (Noor Ouarzazate nearby)",
+        "workforce": "900K active workers, skilled in tourism, agriculture, and artisanal crafts",
+        "advantages": "Global tourism destination, renewable energy projects, growing industrial base"
+    },
+    "souss_massa": {
+        "overview": "Agribusiness and tourism hub with strong export potential.",
+        "sectors": "Agri-food (citrus, fisheries), Tourism, Renewable Energy, Logistics",
+        "infrastructure": "Agadir Al Massira Airport, Port of Agadir, Souss Massa Free Zone, solar and wind projects",
+        "workforce": "700K active workers, skilled in agriculture, fishing, and tourism",
+        "advantages": "Export-oriented agribusiness, proximity to Atlantic ports, renewable energy incentives"
+    },
+    "draa_tafilalet": {
+        "overview": "Emerging region with focus on agriculture, tourism, and renewable energy.",
+        "sectors": "Agri-food, Tourism (desert tourism), Renewable Energy, Mining",
+        "infrastructure": "Errachidia Airport, solar power plants (Noor Midelt), oasis irrigation systems",
+        "workforce": "400K active workers, skilled in agriculture and tourism, emerging technical skills",
+        "advantages": "Unique tourism offerings, renewable energy potential, incentives for territorial equity"
+    },
+    "laayoune_sakia_el_hamra": {
+        "overview": "Strategic southern region with focus on renewable energy and fisheries.",
+        "sectors": "Renewable Energy, Fisheries, Mining (Phosphates), Tourism",
+        "infrastructure": "Laayoune Port, Hassan I Airport, solar and wind farms, industrial zones",
+        "workforce": "300K active workers, skilled in fisheries and renewable energy, growing technical expertise",
+        "advantages": "Significant renewable energy projects, phosphate resources, territorial incentives"
+    },
+    "guelmim_oued_noun": {
+        "overview": "Developing region with focus on connectivity and sustainable industries.",
+        "sectors": "Agri-food, Fisheries, Tourism, Renewable Energy",
+        "infrastructure": "Guelmim Airport, Port of Tan-Tan, renewable energy projects, road connectivity",
+        "workforce": "250K active workers, skilled in fisheries and agriculture, emerging renewable energy skills",
+        "advantages": "Territorial incentives, gateway to West Africa, sustainable project support"
+    },
+    "dakhla_oued_ed_dahab": {
+        "overview": "Emerging hub for renewable energy, fisheries, and tourism in Morocco’s far south.",
+        "sectors": "Renewable Energy, Fisheries, Tourism, Logistics",
+        "infrastructure": "Dakhla Atlantic Port (under development), Dakhla Airport, wind farms, free trade zone",
+        "workforce": "200K active workers, skilled in fisheries and tourism, growing renewable energy expertise",
+        "advantages": "Strategic location for Africa trade, major renewable energy projects, territorial incentives"
     }
-    
+}   
     return regional_data.get(region, {}).get(aspect, f"No specific data available for {region} - {aspect}")
 
 @tool
@@ -483,44 +554,128 @@ def calculate_investment_costs(sector: str, region: str, investment_size: str) -
     - USD equivalent: ${total_cost/10:,.0f} (approx.)
     """
 
+
 @tool
 def get_regulatory_timeline(business_type: str, sector: str) -> str:
     """Get regulatory timeline and requirements for Morocco business setup.
     
     Args:
         business_type: Type of business structure (SARL, SA, SAS, Branch)
-        sector: Business sector for specific requirements
+        sector: Business sector for specific requirements (e.g., manufacturing, renewable energy, agri-food, tourism)
+    
+    Returns:
+        A string detailing the regulatory timeline, key steps, and requirements for setting up the specified business type in the given sector, aligned with Morocco’s Investment Charter.
     """
+    # Base timelines and requirements for business types
     base_timeline = {
-        "SARL": "6-8 weeks total timeline, minimum 10,000 MAD capital",
-        "SA": "8-10 weeks total timeline, minimum 300,000 MAD capital", 
-        "SAS": "6-8 weeks total timeline, minimum 10,000 MAD capital",
-        "Branch": "4-6 weeks total timeline, no minimum capital requirement"
+        "SARL": {
+            "timeline": "6-8 weeks",
+            "capital": "Minimum 10,000 MAD (no minimum required if single shareholder)",
+            "description": "Limited Liability Company, suitable for SMEs, flexible structure."
+        },
+        "SA": {
+            "timeline": "8-10 weeks",
+            "capital": "Minimum 300,000 MAD (or 3M MAD if publicly listed)",
+            "description": "Public Limited Company, ideal for large enterprises with complex governance."
+        },
+        "SAS": {
+            "timeline": "6-8 weeks",
+            "capital": "No minimum capital requirement, flexible for shareholders",
+            "description": "Simplified Joint-Stock Company, suitable for startups and joint ventures."
+        },
+        "Branch": {
+            "timeline": "4-6 weeks",
+            "capital": "No minimum capital requirement",
+            "description": "Extension of a foreign company, no independent legal entity status."
+        }
     }
-    
+
+    # Sector-specific additional timelines and requirements, aligned with Investment Charter
     sector_additions = {
-        "manufacturing": "+2-4 weeks for industrial permits and environmental clearance",
-        "financial": "+4-6 weeks for financial sector licensing",
-        "healthcare": "+6-8 weeks for health ministry approvals",
-        "education": "+3-5 weeks for education ministry permits"
+        "manufacturing": {
+            "additional_time": "+2-4 weeks",
+            "requirements": "Industrial permits (e.g., environmental clearance, factory licensing), compliance with local inclusion rates ",
+            "charter_incentives": "Eligible for main support mechanism (page 8) and sector-based incentives  for automotive, aerospace, textiles, etc."
+        },
+        "renewable_energy": {
+            "additional_time": "+3-5 weeks",
+            "requirements": "MASEN (Moroccan Agency for Sustainable Energy) approvals, environmental impact assessments, compliance with sustainable project criteria ",
+            "charter_incentives": "Incentives for renewable energy production/storage , capped incentives , territorial incentives in regions like Laayoune or Dakhla "
+        },
+        "agri_food": {
+            "additional_time": "+2-4 weeks",
+            "requirements": "Ministry of Agriculture approvals, food safety certifications, 20% local inclusion rate ",
+            "charter_incentives": "Support for agri-food projects (page 11), territorial incentives for equitable development "
+        },
+        "tourism": {
+            "additional_time": "+2-3 weeks",
+            "requirements": "Ministry of Tourism permits, environmental and cultural heritage compliance",
+            "charter_incentives": "Sector-based incentives for tourism projects (page 15), focus on regions like Marrakech-Safi and Dakhla"
+        },
+        "pharmaceuticals": {
+            "additional_time": "+6-8 weeks",
+            "requirements": "Ministry of Health approvals, GMP (Good Manufacturing Practice) certification, 20% local inclusion rate ",
+            "charter_incentives": "Support for medical device and vaccine manufacturing (page 11), strategic project status for health security "
+        },
+        "financial": {
+            "additional_time": "+4-6 weeks",
+            "requirements": "Bank Al-Maghrib or AMMC (Capital Market Authority) licensing, compliance with fintech regulations",
+            "charter_incentives": "Support for fintech and govtech projects "
+        },
+        "education": {
+            "additional_time": "+3-5 weeks",
+            "requirements": "Ministry of Education permits, accreditation for edtech platforms",
+            "charter_incentives": "Support for edtech and training programs "
+        },
+        "digital_technologies": {
+            "additional_time": "+2-4 weeks",
+            "requirements": "Digital Development Agency (ADD) compliance, data protection regulations for AI, blockchain, etc.",
+            "charter_incentives": "Incentives for next-generation industries like AI, blockchain, and IoT"
+        }
     }
-    
-    timeline = base_timeline.get(business_type, "Standard 6-8 weeks")
-    additional = sector_additions.get(sector, "No additional sector-specific requirements")
-    
+
+    # Default values if business_type or sector not found
+    timeline_info = base_timeline.get(business_type, {
+        "timeline": "6-8 weeks",
+        "capital": "Varies by structure",
+        "description": "Standard business structure"
+    })
+    sector_info = sector_additions.get(sector, {
+        "additional_time": "No additional time",
+        "requirements": "No sector-specific requirements",
+        "charter_incentives": "Eligible for main support mechanism if investment ≥50M MAD or creates ≥50 jobs"
+    })
+
+    # Construct the response
     return f"""Regulatory Timeline for {business_type} in {sector}:
-    Base timeline: {timeline}
-    Sector-specific additions: {additional}
-    
-    Key steps:
-    1. Business plan validation (1-2 weeks)
-    2. Legal structure setup (1 week)
-    3. OMPIC registration (2-3 days)
-    4. Bank account and capital deposit (1 day)
-    5. Commercial court registration (5-10 days)
-    6. Tax and social security registration (1 week)
-    7. Sector permits and licenses (varies by sector)
-    """
+
+Base Timeline and Requirements:
+- Timeline: {timeline_info['timeline']}
+- Capital: {timeline_info['capital']}
+- Description: {timeline_info['description']}
+
+Sector-Specific Additions:
+- Additional Time: {sector_info['additional_time']}
+- Requirements: {sector_info['requirements']}
+- Investment Charter Incentives: {sector_info['charter_incentives']}
+
+Key Steps for Business Setup in Morocco (aligned with Investment Charter, pages 20-22):
+1. Business Plan Validation (1-2 weeks): Submit plan to Regional Investment Center (RIC) for initial review. Contact relevant RIC for support.
+2. Legal Structure Setup (1 week): Draft articles of association with a notary, ensuring compliance with business type requirements.
+3. OMPIC Registration (2-3 days): Register with the Office Marocain de la Propriété Industrielle et Commerciale (OMPIC) for commercial registration.
+4. Bank Account and Capital Deposit (1 day): Open a corporate bank account and deposit required capital (if applicable).
+5. Commercial Court Registration (5-10 days): Register with the Commercial Court for legal recognition.
+6. Tax and Social Security Registration (1 week): Obtain tax ID and register with CNSS (National Social Security Fund).
+7. Sector-Specific Permits and Licenses (varies): Obtain approvals from relevant ministries (e.g., Health, Agriculture) or agencies (e.g., MASEN, ADD) as per sector requirements.
+8. RIC Support (ongoing): Leverage RIC one-stop shops for streamlined procedures, especially for projects <250M MAD (page 23).
+
+Additional Notes:
+- For projects ≥250M MAD, agreements are prepared centrally by the National Investment Commission .
+- Strategic projects (≥2B MAD, impacting water/energy/food/health security,) should contact the Ministry of Investment at +212538061301.
+- SMEs may access specific support for financing and training.
+- Check territorial incentives for regions like Beni Mellal-Khenifra or Dakhla to reduce disparities.
+- Contact AMDIE at +212537226400 or morocconow@amdie.gov.ma for export-oriented or diaspora investment support.
+"""
 
 class EnhancedMoroccoAgent:
     """Enhanced Morocco investment agent using LangChain"""
