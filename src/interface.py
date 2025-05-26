@@ -7,6 +7,9 @@ import time
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import websocket
+from sseclient import SSEClient
+import threading
 
 # Streamlit page configuration
 st.set_page_config(
@@ -124,6 +127,12 @@ class MoroccoInvestmentChat:
             st.session_state.api_status = 'unknown'
         if 'available_agents' not in st.session_state:
             st.session_state.available_agents = {}
+        if 'websocket_messages' not in st.session_state:
+            st.session_state.websocket_messages = []
+        if 'websocket_thread' not in st.session_state:
+            st.session_state.websocket_thread = None
+        if 'websocket_connected' not in st.session_state:
+            st.session_state.websocket_connected = False
     
     def check_api_health(self) -> Dict:
         """Check backend API health status"""
@@ -141,7 +150,103 @@ class MoroccoInvestmentChat:
         except requests.exceptions.RequestException as e:
             st.session_state.api_status = 'error'
             return {"error": f"Connection failed: {str(e)}"}
-    
+    def connect_websocket(self, user_query: str):
+        """Connect to WebSocket endpoint and handle real-time communication"""
+        def on_message(ws, message):
+            data = json.loads(message)
+            st.session_state.websocket_messages.append(data)
+            if data.get("type") == "response":
+                result = data.get("data", {})
+                st.session_state.queries_count += 1
+                st.session_state.total_tokens_used += result.get('total_tokens', 0)
+                for agent in result.get('agents_used', []):
+                    st.session_state.agents_used.add(agent)
+                assistant_message = {
+                    "type": "assistant",
+                    "content": result.get('response', 'No response received'),
+                    "timestamp": datetime.now(),
+                    "metadata": {
+                        "agents_used": result.get('agents_used', []),
+                        "routing_reasoning": result.get('routing_reasoning', ''),
+                        "total_tokens": result.get('total_tokens', 0),
+                        "tools_used": result.get('tools_used', []),
+                        "context_documents": result.get('context_documents', 0)
+                    }
+                }
+                st.session_state.conversation_history.append(assistant_message)
+                st.session_state.websocket_messages.append({"type": "status", "message": "✅ Analysis complete"})
+                st.rerun()
+
+        def on_error(ws, error):
+            st.session_state.websocket_messages.append({"type": "error", "message": f"WebSocket Error: {str(error)}"})
+            st.session_state.websocket_connected = False
+            st.rerun()
+
+        def on_close(ws, close_status_code, close_msg):
+            st.session_state.websocket_messages.append({"type": "status", "message": "WebSocket Disconnected"})
+            st.session_state.websocket_connected = False
+            st.rerun()
+
+        def on_open(ws):
+            st.session_state.websocket_connected = True
+            ws.send(json.dumps({"query": user_query}))
+            st.session_state.websocket_messages.append({"type": "status", "message": "Connected to WebSocket"})
+
+        ws_url = f"ws://localhost:8000/ws"  # Update to your deployed WebSocket URL
+        ws = websocket.WebSocketApp(
+            ws_url,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+            on_open=on_open
+        )
+        st.session_state.websocket_thread = threading.Thread(target=ws.run_forever)
+        st.session_state.websocket_thread.daemon = True
+        st.session_state.websocket_thread.start()
+    def stream_query(self, user_query: str):
+        """Send query to streaming endpoint and process SSE responses"""
+        try:
+            payload = {
+                "query": user_query,
+                "conversation_history": [
+                    {"user" if msg["type"] == "user" else "assistant": msg["content"]} 
+                    for msg in st.session_state.conversation_history[-10:]
+                ]
+            }
+            response = requests.post(
+                f"{API_BASE_URL}/chat/stream",
+                json=payload,
+                stream=True,
+                timeout=300
+            )
+            client = SSEClient(response)
+            for event in client.events():
+                data = json.loads(event.data)
+                st.session_state.websocket_messages.append(data)
+                if data.get("type") == "final_response":
+                    result = data.get("data", {})
+                    st.session_state.queries_count += 1
+                    st.session_state.total_tokens_used += result.get('total_tokens', 0)
+                    for agent in result.get('agents_used', []):
+                        st.session_state.agents_used.add(agent)
+                    assistant_message = {
+                        "type": "assistant",
+                        "content": result.get('response', 'No response received'),
+                        "timestamp": datetime.now(),
+                        "metadata": {
+                            "agents_used": result.get('agents_used', []),
+                            "routing_reasoning": result.get('routing_reasoning', ''),
+                            "total_tokens": result.get('total_tokens', 0),
+                            "tools_used": result.get('tools_used', []),
+                            "context_documents": result.get('context_documents', 0)
+                        }
+                    }
+                    st.session_state.conversation_history.append(assistant_message)
+                    st.session_state.websocket_messages.append({"type": "status", "message": "✅ Analysis complete"})
+                st.rerun()
+        except Exception as e:
+            st.session_state.websocket_messages.append({"type": "error", "message": f"Streaming Error: {str(e)}"})
+            st.rerun()
     def get_available_agents(self) -> Dict:
         """Get available agents and their capabilities"""
         try:
@@ -262,7 +367,14 @@ class MoroccoInvestmentChat:
             if st.button("🔄 Refresh Connection"):
                 health_status = self.check_api_health()
                 st.rerun()
-            
+            # In display_main_interface, after the user_input text_area
+            st.markdown("---")
+            communication_mode = st.selectbox(
+                "📡 Communication Mode",
+                ["WebSocket (Real-Time)", "Streaming (SSE)"],
+                key="communication_mode_selector"
+            )
+            st.session_state.communication_mode = "websocket" if communication_mode == "WebSocket (Real-Time)" else "streaming"
             st.markdown("---")
             
             st.markdown("### 📊 Session Statistics")
@@ -482,95 +594,141 @@ class MoroccoInvestmentChat:
                 self.display_session_analytics()
     
     def process_user_query(self, user_query: str):
-        """Enhanced query processing with real-time feedback"""
-        
-        # Add user message immediately
+        """Process query with real-time WebSocket or streaming feedback"""
         user_message = {
             "type": "user",
             "content": user_query,
             "timestamp": datetime.now()
         }
         st.session_state.conversation_history.append(user_message)
+        st.session_state.websocket_messages = [{"type": "status", "message": "Connecting to expert system..."}]
         
-        # Show processing animation
-        with st.container():
-            st.markdown("""
-            <div class="processing-animation">
-                <span>🤔</span>
-                <span>Analyzing your query and routing to expert agents...</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            # Simulate processing steps
-            steps = [
-                "🔍 Analyzing query intent...",
-                "🎯 Routing to appropriate experts...",
-                "💼 Consulting regional expert...",
-                "📋 Checking regulatory requirements...",
-                "💰 Calculating financial implications...",
-                "🔄 Synthesizing expert responses...",
-                "✅ Preparing comprehensive analysis..."
-            ]
-            
-            for i, step in enumerate(steps):
-                status_text.text(step)
-                progress_bar.progress((i + 1) / len(steps))
-                time.sleep(0.3)  # Simulate processing time
+        # Choose communication mode (WebSocket or Streaming)
+        communication_mode = st.session_state.get('communication_mode', 'websocket')
         
-        # Send query to backend
-        result = self.send_query(user_query)
-        
-        # Clear processing indicators
-        progress_bar.empty()
-        status_text.empty()
-        
-        if "error" in result:
-            st.error(f"❌ {result['error']}")
-            
-            # Add error message to conversation
-            error_message = {
-                "type": "assistant",
-                "content": f"I apologize, but I encountered an error: {result['error']}. Please check if the backend service is running and try again.",
-                "timestamp": datetime.now(),
-                "metadata": {"error": True}
-            }
-            st.session_state.conversation_history.append(error_message)
+        if communication_mode == 'websocket':
+            self.connect_websocket(user_query)
         else:
-            # Process successful response
-            response_text = result.get('response', 'No response received')
-            
-            # Update session statistics
-            st.session_state.queries_count += 1
-            st.session_state.total_tokens_used += result.get('total_tokens', 0)
-            
-            # Track agents used
-            agents_used = result.get('agents_used', [])
-            for agent in agents_used:
-                st.session_state.agents_used.add(agent)
-            
-            # Add assistant response to conversation
-            assistant_message = {
-                "type": "assistant",
-                "content": response_text,
-                "timestamp": datetime.now(),
-                "metadata": {
-                    "agents_used": agents_used,
-                    "routing_reasoning": result.get('routing_reasoning', ''),
-                    "total_tokens": result.get('total_tokens', 0),
-                    "tools_used": result.get('tools_used', []),
-                    "context_documents": result.get('context_documents', 0)
-                }
-            }
-            st.session_state.conversation_history.append(assistant_message)
-            
-            # Show success message
-            st.success("✅ Analysis complete! Check the response above.")
+            threading.Thread(target=self.stream_query, args=(user_query,), daemon=True).start()
         
-        # Rerun to update the interface
-        st.rerun()
+        # Display real-time updates
+        with st.container():
+            for message in st.session_state.websocket_messages:
+                if message.get("type") == "status":
+                    st.markdown(f"""
+                    <div class="processing-animation">
+                        <span>🤔</span>
+                        <span>{message['message']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                elif message.get("type") == "routing":
+                    st.markdown(f"""
+                    <div class="routing-info">
+                        <strong>🎯 Agent Selection:</strong> {message['data']['reasoning']}<br>
+                        <strong>Primary Expert:</strong> {message['data']['primary'].replace('_', ' ').title()}<br>
+                        <strong>Secondary Experts:</strong> {', '.join([agent.replace('_', ' ').title() for agent in message['data']['secondary']]) or 'None'}
+                    </div>
+                    """, unsafe_allow_html=True)
+                elif message.get("type") == "error":
+                    st.error(f"❌ {message['message']}")
+                    error_message = {
+                        "type": "assistant",
+                        "content": f"I apologize, but I encountered an error: {message['message']}. Please try again.",
+                        "timestamp": datetime.now(),
+                        "metadata": {"error": True}
+                    }
+                    st.session_state.conversation_history.append(error_message)
+                    st.session_state.websocket_messages = []
+                    st.rerun()
+            """Enhanced query processing with real-time feedback"""
+            
+            # Add user message immediately
+            user_message = {
+                "type": "user",
+                "content": user_query,
+                "timestamp": datetime.now()
+            }
+            st.session_state.conversation_history.append(user_message)
+            
+            # Show processing animation
+            with st.container():
+                st.markdown("""
+                <div class="processing-animation">
+                    <span>🤔</span>
+                    <span>Analyzing your query and routing to expert agents...</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # Simulate processing steps
+                steps = [
+                    "🔍 Analyzing query intent...",
+                    "🎯 Routing to appropriate experts...",
+                    "💼 Consulting regional expert...",
+                    "📋 Checking regulatory requirements...",
+                    "💰 Calculating financial implications...",
+                    "🔄 Synthesizing expert responses...",
+                    "✅ Preparing comprehensive analysis..."
+                ]
+                
+                for i, step in enumerate(steps):
+                    status_text.text(step)
+                    progress_bar.progress((i + 1) / len(steps))
+                    time.sleep(0.3)  # Simulate processing time
+            
+            # Send query to backend
+            result = self.send_query(user_query)
+            
+            # Clear processing indicators
+            progress_bar.empty()
+            status_text.empty()
+            
+            if "error" in result:
+                st.error(f"❌ {result['error']}")
+                
+                # Add error message to conversation
+                error_message = {
+                    "type": "assistant",
+                    "content": f"I apologize, but I encountered an error: {result['error']}. Please check if the backend service is running and try again.",
+                    "timestamp": datetime.now(),
+                    "metadata": {"error": True}
+                }
+                st.session_state.conversation_history.append(error_message)
+            else:
+                # Process successful response
+                response_text = result.get('response', 'No response received')
+                
+                # Update session statistics
+                st.session_state.queries_count += 1
+                st.session_state.total_tokens_used += result.get('total_tokens', 0)
+                
+                # Track agents used
+                agents_used = result.get('agents_used', [])
+                for agent in agents_used:
+                    st.session_state.agents_used.add(agent)
+                
+                # Add assistant response to conversation
+                assistant_message = {
+                    "type": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.now(),
+                    "metadata": {
+                        "agents_used": agents_used,
+                        "routing_reasoning": result.get('routing_reasoning', ''),
+                        "total_tokens": result.get('total_tokens', 0),
+                        "tools_used": result.get('tools_used', []),
+                        "context_documents": result.get('context_documents', 0)
+                    }
+                }
+                st.session_state.conversation_history.append(assistant_message)
+                
+                # Show success message
+                st.success("✅ Analysis complete! Check the response above.")
+            
+            # Rerun to update the interface
+            st.rerun()
 
 # Main application execution
 def main():

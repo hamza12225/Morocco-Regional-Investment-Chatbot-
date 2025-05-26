@@ -684,6 +684,8 @@ class EnhancedMoroccoAgent:
         self.agent_type = agent_type
         self.config = config
         self.knowledge_base = knowledge_base
+        self.redis_client = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+
         
         # Initialize LangChain ChatOpenAI with DeepSeek
         self.llm = ChatOpenAI(
@@ -759,39 +761,28 @@ Current date: {datetime.now().strftime('%Y-%m-%d')}
             max_iterations=3,
             early_stopping_method="generate"
         )
-    
-    async def process_query(self, user_query: str, context: Optional[str] = None) -> Dict[str, Any]:
-        """Process query using LangChain agent with enhanced context"""
+    async def process_query(self, user_query: str, context: Optional[str] = None, skip_context_retrieval: bool = False) -> Dict[str, Any]:
+        """Process query with option to skip context retrieval for already routed queries"""
         
-        # Check cache
         cache_key = f"enhanced_query:{self.agent_type}:{hash(user_query)}"
         cached_response = self.redis_client.get(cache_key)
         if cached_response:
             return json.loads(cached_response)
         
         try:
-            # Get relevant context from knowledge base
-            relevant_docs = self.knowledge_base.retrieve_relevant_info(user_query)
-            context_info = "\n".join([doc.page_content for doc in relevant_docs[:3]])
+            # Skip context retrieval if already done in orchestrator
+            if not skip_context_retrieval:
+                relevant_docs = self.knowledge_base.retrieve_relevant_info(user_query)
+                context_info = "\n".join([doc.page_content for doc in relevant_docs[:3]])
+            else:
+                relevant_docs = []
+                context_info = context or ""
             
-            # Enhanced query with context
-            enhanced_query = f"""
-Context from knowledge base:
-{context_info}
-
-User Query: {user_query}
-
-Please provide a comprehensive response using the available tools and context information.
-"""
+            # Direct query without re-enhancement
+            enhanced_query = f"{context_info}\n\nUser Query: {user_query}" if context_info else user_query
             
-            # Track token usage
             callback = TokenUsageCallback()
-            
-            # Process with agent
-            response = await self.agent.ainvoke(
-                {"input": enhanced_query},
-                callbacks=[callback]
-            )
+            response = await self.agent.ainvoke({"input": enhanced_query}, callbacks=[callback])
             
             result = {
                 "agent_type": self.agent_type,
@@ -806,13 +797,12 @@ Please provide a comprehensive response using the available tools and context in
                 "timestamp": datetime.now().isoformat()
             }
             
-            # Cache for 1 hour
             self.redis_client.setex(cache_key, 3600, json.dumps(result))
-            
             return result
             
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+    
 
 class EnhancedAgentOrchestrator:
     """Enhanced orchestrator using LangChain for better agent coordination"""
@@ -835,6 +825,8 @@ class EnhancedAgentOrchestrator:
             model=config.model,
             temperature=0.3
         )
+    
+    
     
     async def route_query(self, user_query: str) -> Dict[str, Any]:
         """Enhanced query routing using LangChain"""
@@ -897,22 +889,34 @@ Return ONLY valid JSON:
                 "secondary": [],
                 "reasoning": f"Fallback routing based on keyword analysis. Error: {str(e)}"
             }
-    
     async def process_investment_query(self, user_query: str, conversation_history: Optional[List] = None) -> Dict[str, Any]:
         """Enhanced query processing with LangChain orchestration"""
+        
+        relevant_docs = self.knowledge_base.retrieve_relevant_info(user_query)
+        context_info = "\n".join([doc.page_content for doc in relevant_docs[:3]])
         
         # Route query
         routing = await self.route_query(user_query)
         
-        # Process with primary agent
-        primary_result = await self.agents[routing["primary"]].process_query(user_query)
+        # Process with primary agent (skip context retrieval)
+        primary_result = await self.agents[routing["primary"]].process_query(
+            user_query, 
+            context=context_info, 
+            skip_context_retrieval=True
+        )
         
-        # Process with secondary agents if needed
-        secondary_results = []
+        # Process secondary agents in parallel
+        secondary_tasks = []
         for agent_type in routing.get("secondary", []):
             if agent_type in self.agents:
-                result = await self.agents[agent_type].process_query(user_query)
-                secondary_results.append(result)
+                task = self.agents[agent_type].process_query(
+                    user_query, 
+                    context=context_info, 
+                    skip_context_retrieval=True
+                )
+                secondary_tasks.append(task)
+        
+        secondary_results = await asyncio.gather(*secondary_tasks) if secondary_tasks else []
         
         # Synthesize if multiple agents involved
         if secondary_results:
@@ -931,7 +935,6 @@ Return ONLY valid JSON:
             }
         
         return final_response
-    
     async def _synthesize_responses(self, primary_result: Dict, secondary_results: List[Dict], 
                                   user_query: str, routing: Dict) -> Dict[str, Any]:
         """Synthesize multiple agent responses using LangChain"""
@@ -1003,10 +1006,97 @@ Provide a cohesive, professional response:
                 "timestamp": datetime.now().isoformat(),
                 "error": f"Synthesis error: {str(e)}"
             }
+    async def process_investment_query_optimized(self, user_query: str, conversation_history: Optional[List] = None) -> Dict[str, Any]:
+        """Optimized version with caching and parallel processing"""
+        routing = await self.route_query(user_query)
+        all_agents = [routing["primary"]] + routing.get("secondary", [])
+        
+        cached_response = await response_cache.get(user_query, all_agents)
+        if cached_response:
+            return cached_response
+        
+        relevant_docs = self.knowledge_base.retrieve_relevant_info(user_query)
+        context_info = "\n".join([doc.page_content for doc in relevant_docs[:3]])
+        
+        tasks = []
+        for agent_type in all_agents:
+            if agent_type in self.agents:
+                task = self.agents[agent_type].process_query(
+                    user_query, 
+                    context=context_info, 
+                    skip_context_retrieval=True
+                )
+                tasks.append((agent_type, task))
+        
+        results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+        
+        primary_result = results[0] if not isinstance(results[0], Exception) else None
+        secondary_results = [r for r in results[1:] if not isinstance(r, Exception)]
+        
+        final_response = await self._synthesize_responses(primary_result, secondary_results, user_query, routing)
+        await response_cache.set(user_query, all_agents, final_response)
+        
+        return final_response
 
 # FastAPI Application with Enhanced Features
-app = FastAPI(title="Enhanced Morocco Investment Assistant", version="2.0.0")
+# 1. Imports
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import List, Dict, Any, Optional
+import redis
+import json
+import asyncio
+import hashlib
+from datetime import datetime
+import os
+import uvicorn
 
+# 2. ConnectionManager Class
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+    
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+    
+    async def send_message(self, message: dict, websocket: WebSocket):
+        await websocket.send_text(json.dumps(message))
+
+# 3. ResponseCache Class
+class ResponseCache:
+    def __init__(self, redis_client):
+        self.redis = redis_client
+    
+    def get_cache_key(self, query: str, agent_types: List[str]) -> str:
+        combined = f"{query}:{':'.join(sorted(agent_types))}"
+        return f"response_cache:{hashlib.md5(combined.encode()).hexdigest()}"
+    
+    async def get(self, query: str, agent_types: List[str]) -> Optional[Dict]:
+        key = self.get_cache_key(query, agent_types)
+        cached = self.redis.get(key)
+        return json.loads(cached) if cached else None
+    
+    async def set(self, query: str, agent_types: List[str], response: Dict, ttl: int = 1800):
+        key = self.get_cache_key(query, agent_types)
+        self.redis.setex(key, ttl, json.dumps(response))
+
+# 4. Stream Response Function
+async def stream_response(query: str):
+    """Generator for streaming responses"""
+    yield {"type": "status", "message": "Analyzing query..."}
+    routing = await orchestrator.route_query(query)
+    yield {"type": "routing", "data": routing}
+    result = await orchestrator.process_investment_query_optimized(query)
+    yield {"type": "final_response", "data": result}
+
+# 5. FastAPI App and Orchestrator Initialization
+app = FastAPI(title="Enhanced Morocco Investment Assistant", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -1014,11 +1104,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize enhanced orchestrator
 config = DeepSeekConfig()
+manager = ConnectionManager()
+response_cache = ResponseCache(redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379")))
 orchestrator = EnhancedAgentOrchestrator(config)
 
+# 6. Modify EnhancedAgentOrchestrator
+# Add this method to the EnhancedAgentOrchestrator class
+
+# 7. FastAPI Endpoints
 class EnhancedQueryRequest(BaseModel):
     query: str
     conversation_history: Optional[List[Dict[str, str]]] = None
@@ -1037,13 +1131,41 @@ class EnhancedQueryResponse(BaseModel):
 async def enhanced_chat_endpoint(request: EnhancedQueryRequest):
     """Enhanced chat endpoint with LangChain integration"""
     try:
-        result = await orchestrator.process_investment_query(
+        result = await orchestrator.process_investment_query_optimized(
             request.query,
             request.conversation_history
         )
         return EnhancedQueryResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat/stream")
+async def stream_chat(request: EnhancedQueryRequest):
+    """Streaming chat endpoint"""
+    async def generate():
+        async for chunk in stream_response(request.query):
+            yield f"data: {json.dumps(chunk)}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            query_data = json.loads(data)
+            await manager.send_message({
+                "type": "status",
+                "message": "Processing your query..."
+            }, websocket)
+            result = await orchestrator.process_investment_query_optimized(query_data["query"])
+            await manager.send_message({
+                "type": "response",
+                "data": result
+            }, websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 @app.get("/agents")
 async def list_agents():
@@ -1080,21 +1202,23 @@ async def health_check():
         "vector_store": "initialized",
         "agents": len(orchestrator.agents)
     }
+
+@app.get("/ready")
+async def readiness_check():
+    return {"status": "ready"}
+
 @app.on_event("startup")
 async def startup_event():
     # Preload models and dependencies
     MoroccoKnowledgeBase(config).retrieve_relevant_info("test") 
     print("➔ Preloaded all ML models and dependencies")
 
-@app.get("/ready")
-async def readiness_check():
-    return {"status": "ready"}
+# 8. Main Block
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,  # Disable auto-reload
-        timeout_keep_alive=100  # Add this line
+        reload=False,
+        timeout_keep_alive=100
     )
